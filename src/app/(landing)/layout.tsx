@@ -1,0 +1,19 @@
+import Footer from "./_components/footer";
+import Navbar from "./_components/navbar";
+
+export default function PageLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <>
+    
+    <main className="relative bg-[#0a0a0a] w-full">
+      <Navbar/>
+      {children}
+      <Footer />
+    </main>
+    </>
+  );
+}
