@@ -46,11 +46,8 @@ export async function GET() {
       );
     }
 
-    const projects = await prisma.project.findMany({
-      where: { ownerId: session.user.id },
-    });
 
-    return NextResponse.json(projects, { status: 200 });
+
   } catch (error) {
     console.error("Error fetching projects", error);
     return NextResponse.json(
