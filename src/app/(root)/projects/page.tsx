@@ -2,7 +2,7 @@
 
 import { assertAuthenticated } from "@/lib/session";
 import { getAllProjects } from "@/use-cases/project";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { EmptyProject } from "./_components/empty-project";
 import { Header } from "./_components/header";
 import { ProjectCard } from "./_components/project-card";
@@ -10,6 +10,7 @@ import { ProjectSkelteon } from "./_components/project-skeleton";
 import { Heading } from "lucide-react";
 import Projects from "./_components/projects";
 import IDELayout from "./_components/IDELayout";
+import { io } from "socket.io-client";
 
 export default function ProjectsPage() {
   const [code, setCode] = useState<string>(`// Write your code here
@@ -22,12 +23,54 @@ export default function ProjectsPage() {
     console.log(fibonacci(i));
   }
   `);
+  const [output, setOutput] = useState("");
+
+  const socketRef = useRef<any | null>(null);
+
+  useEffect(() => {
+    if (!socketRef.current) {
+      socketRef.current = io("http://localhost:3001", {
+        reconnection: true, // auto reconnect
+        reconnectionAttempts: 5, // retry max 5 times
+        reconnectionDelay: 1000, // wait 1s between retries
+      });
+
+      socketRef.current.on("connect", () => {
+        console.log("✅ Connected:", socketRef.current?.id);
+        // socketRef.current?.emit("message", "Hello from Next.js client!");
+      });
+
+      socketRef.current.on("output", (out: any) => {
+        setOutput(out.output);
+      });
+
+      // socketRef.current.on("disconnect", () => {
+      //   console.log("❌ Disconnected, will try to reconnect…");
+      // });
+    }
+  });
+
+  const sendCodeToRun = (langId: number) => {
+    if (socketRef.current?.connected) {
+      socketRef.current.emit("run", {
+        code: code,
+        langId: langId,
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col w-full h-full">
       {/* <Header title="Your Projects" /> */}
       <Suspense fallback={<ProjectSkelteon />}>
         {/* <Projects /> */}
-        <IDELayout code={code} setCode={setCode} />
+        <IDELayout
+          code={code}
+          setCode={setCode}
+          output={output}
+          setOutput={setOutput}
+          sendCodeToRun={sendCodeToRun}
+        />
       </Suspense>
       {/* <CreateModal /> */}
       {/* <EditModal /> */}

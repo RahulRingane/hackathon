@@ -6,8 +6,13 @@ import { Card } from "@/components/ui/card";
 import Editor from "@monaco-editor/react";
 import { ReactSketchCanvas } from "react-sketch-canvas";
 
-export default function IDELayout({ code, setCode }: any) {
-  const [output, setOutput] = useState("");
+export default function IDELayout({
+  code,
+  setCode,
+  output,
+  setOutput,
+  sendCodeToRun,
+}: any) {
   const [activeTab, setActiveTab] = useState<"editor" | "canvas">("editor");
 
   return (
@@ -30,7 +35,12 @@ export default function IDELayout({ code, setCode }: any) {
         >
           Canvas
         </button>
-        <button className="px-3 py-1 rounded bg-green-600 ml-auto">
+        <button
+          className="px-3 py-1 rounded bg-green-600 ml-auto"
+          onClick={() => {
+            sendCodeToRun(63);
+          }}
+        >
           ▶ Run
         </button>
         <button className="px-3 py-1 rounded bg-green-600">

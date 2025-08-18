@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       );
     }
 
-     const values = await req.json();
+    const values = await req.json();
     if (!values.domain || !values.name || !values.description) {
       return NextResponse.json(
         { message: "Missing required fields", success: false },
@@ -23,36 +23,10 @@ export async function POST(req: Request) {
       );
     }
 
-    const existingProject = await prisma.project.findFirst({
-      where: { domain: values.domain },
-    });
-    if (existingProject) {
-      return NextResponse.json(
-        { message: "Domain already exists", success: false },
-        { status: 400 }
-      );
-    }
 
-    const project = await prisma.project.create({
-      data: {
-        domain: values.domain,
-        name: values.name,
-        description: values.description,
-        owner: { connect: { id: session.user.id } },
-      },
-    });
-    revalidateTag("projects");
-    if (!project) {
-      return NextResponse.json(
-        { message: "Project not created", success: false },
-        { status: 400 },
-      );
-    }
-    revalidatePath("/projects");
-    return NextResponse.json(
-      { project, message: "Project created", success: true },
-      { status: 201 },
-    );
+
+
+
   } catch (error: any) {
     console.error("Error creating project", error);
     return NextResponse.json(
