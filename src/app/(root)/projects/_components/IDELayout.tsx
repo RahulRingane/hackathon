@@ -1,10 +1,28 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { Card } from "@/components/ui/card";
 import Editor from "@monaco-editor/react";
 import { ReactSketchCanvas } from "react-sketch-canvas";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { ChevronDown } from "lucide-react";
+
+// ✅ Supported Judge0 languages
+const languages = [
+  { id: 63, name: "JavaScript (Node.js 12.14.0)" },
+  { id: 54, name: "C++ (GCC 9.2.0)" },
+  { id: 62, name: "Java (OpenJDK 13.0.1)" },
+  { id: 71, name: "Python (3.8.1)" },
+  { id: 50, name: "C (GCC 9.2.0)" },
+  { id: 68, name: "PHP (7.4.1)" },
+];
 
 export default function IDELayout({
   code,
@@ -12,12 +30,50 @@ export default function IDELayout({
   output,
   setOutput,
   sendCodeToRun,
+  sendCodeToAnalyze,
 }: any) {
   const [activeTab, setActiveTab] = useState<"editor" | "canvas">("editor");
+  const [selectedLang, setSelectedLang] = useState(languages[0]);
+  const editorRef = useRef<any>(null);
+
+  // ✅ get both editor + monaco instance
+  function handleEditorDidMount(editor: any, monaco: any) {
+    editorRef.current = editor;
+
+    // capture changes in code
+    editor.onDidChangeModelContent(() => {
+      const value = editor.getValue();
+      setCode(value);
+    });
+
+    // capture key events
+    editor.onKeyDown((e: any) => {
+      if (e.keyCode === monaco.KeyCode.Backspace) {
+        console.log("⌫ Backspace pressed");
+        sendCodeToAnalyze(selectedLang.id, "backspace");
+      }
+
+      if (e.keyCode === monaco.KeyCode.Enter && !e.ctrlKey) {
+        console.log("⏎ Enter pressed");
+      }
+
+      if (e.ctrlKey && e.keyCode === monaco.KeyCode.Enter) {
+        console.log("🚀 Ctrl + Enter pressed → Run code");
+        sendCodeToRun(selectedLang.id);
+        e.preventDefault();
+      }
+
+      if (e.ctrlKey && e.keyCode === monaco.KeyCode.KeyS) {
+        console.log("💾 Ctrl + S pressed → Save code");
+        e.preventDefault();
+        // socket.emit("save", editor.getValue()); // example
+      }
+    });
+  }
 
   return (
     <div className="h-full w-full bg-slate-900 text-white flex flex-col">
-      {/* 🔘 Top Bar with buttons */}
+      {/* Top Bar */}
       <div className="flex gap-2 p-2 bg-slate-800 border-b border-gray-700">
         <button
           className={`px-3 py-1 rounded ${
@@ -35,25 +91,47 @@ export default function IDELayout({
         >
           Canvas
         </button>
-        <button
-          className="px-3 py-1 rounded bg-green-600 ml-auto"
-          onClick={() => {
-            sendCodeToRun(63);
-          }}
-        >
-          ▶ Run
-        </button>
-        <button className="px-3 py-1 rounded bg-green-600">
-          ▶ Analyze your code
-        </button>
+
+        <div className="ml-auto flex items-center gap-2">
+          {/* Run Button */}
+          <button
+            className="px-3 py-1 rounded bg-green-600"
+            onClick={() => {
+              sendCodeToRun(selectedLang.id);
+            }}
+          >
+            ▶ Run
+          </button>
+
+          {/* Dropdown for Language */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="bg-gray-700 text-white border-gray-600"
+              >
+                {selectedLang.name} <ChevronDown className="ml-2 h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-slate-800 text-white">
+              {languages.map((lang) => (
+                <DropdownMenuItem
+                  key={lang.id}
+                  onClick={() => setSelectedLang(lang)}
+                  className="hover:bg-slate-700 cursor-pointer"
+                >
+                  {lang.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
-      {/* Main Panels */}
+      {/* Panels */}
       <PanelGroup direction="horizontal" className="flex-1">
-        {/* LEFT SIDE → Editor/Canvas + Output */}
         <Panel defaultSize={70} minSize={40}>
           <PanelGroup direction="vertical">
-            {/* Editor / Canvas */}
             <Panel defaultSize={70} minSize={40}>
               <Card className="h-full bg-slate-950 p-2 flex flex-col">
                 {activeTab === "editor" ? (
@@ -62,7 +140,7 @@ export default function IDELayout({
                     defaultLanguage="javascript"
                     theme="vs-dark"
                     value={code}
-                    onChange={(val) => setCode(val || "")}
+                    onMount={handleEditorDidMount} // ✅ gives editor + monaco
                   />
                 ) : (
                   <ReactSketchCanvas
@@ -82,7 +160,6 @@ export default function IDELayout({
 
             <PanelResizeHandle className="h-2 bg-gray-700 hover:bg-gray-500 cursor-row-resize" />
 
-            {/* Output Panel BELOW Editor */}
             <Panel defaultSize={30} minSize={20}>
               <Card className="h-full bg-black text-green-400 p-2 font-mono overflow-auto">
                 {output || "Output will appear here..."}
@@ -93,7 +170,6 @@ export default function IDELayout({
 
         <PanelResizeHandle className="w-2 bg-gray-700 hover:bg-gray-500 cursor-col-resize" />
 
-        {/* RIGHT SIDE → Suggestions / Bot */}
         <Panel defaultSize={30} minSize={20}>
           <Card className="h-full bg-slate-950 p-4">
             <h2 className="text-lg font-bold mb-2">🤖 Suggestions</h2>

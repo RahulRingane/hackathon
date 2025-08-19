@@ -11,6 +11,8 @@ import { Heading } from "lucide-react";
 import Projects from "./_components/projects";
 import IDELayout from "./_components/IDELayout";
 import { io } from "socket.io-client";
+// import { cookies } from "next/headers";
+import { log } from "node:console";
 
 export default function ProjectsPage() {
   const [code, setCode] = useState<string>(`// Write your code here
@@ -38,11 +40,19 @@ export default function ProjectsPage() {
       socketRef.current.on("connect", () => {
         console.log("✅ Connected:", socketRef.current?.id);
         // socketRef.current?.emit("message", "Hello from Next.js client!");
+        // let a = Cookies.get("authjs.session-token");
+        // setOutput(a);
+
+        // socketRef.current.emit("userAuth", {
+        // jwtToken: a,
+        // });
       });
 
       socketRef.current.on("output", (out: any) => {
         setOutput(out.output);
       });
+
+      socketRef.current.on("");
 
       // socketRef.current.on("disconnect", () => {
       //   console.log("❌ Disconnected, will try to reconnect…");
@@ -59,6 +69,16 @@ export default function ProjectsPage() {
     }
   };
 
+  const sendCodeToAnalyze = (langId: number, etype: string) => {
+    if (socketRef.current?.connected) {
+      socketRef.current.emit("suggestErr", {
+        code: code,
+        langId: langId,
+        etype: etype,
+      });
+    }
+  };
+
   return (
     <div className="flex flex-col w-full h-full">
       {/* <Header title="Your Projects" /> */}
@@ -70,6 +90,7 @@ export default function ProjectsPage() {
           output={output}
           setOutput={setOutput}
           sendCodeToRun={sendCodeToRun}
+          sendCodeToAnalyze={sendCodeToAnalyze}
         />
       </Suspense>
       {/* <CreateModal /> */}
