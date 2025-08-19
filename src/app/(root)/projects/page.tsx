@@ -13,6 +13,7 @@ import IDELayout from "./_components/IDELayout";
 import { io } from "socket.io-client";
 // import { cookies } from "next/headers";
 import { log } from "node:console";
+import { strict } from "node:assert";
 
 export default function ProjectsPage() {
   const [code, setCode] = useState<string>(`// Write your code here
@@ -26,6 +27,7 @@ export default function ProjectsPage() {
   }
   `);
   const [output, setOutput] = useState("");
+  const [data1, setdata1] = useState();
 
   const socketRef = useRef<any | null>(null);
 
@@ -52,7 +54,18 @@ export default function ProjectsPage() {
         setOutput(out.output);
       });
 
-      socketRef.current.on("");
+      // socketRef.current.on("suggestErrRes", (obj: any) => {
+      //   setdata1(obj);
+      //   console.log("data11" + data1);
+      // });
+      socketRef.current.on("suggestErrRes", (obj: any) => {
+        const extracted: any = {
+          improvements: obj?.llmRes?.data?.data?.improvements || [],
+          wholeConcise: obj?.llmRes?.data?.data?.wholeConcise || "",
+        };
+        setdata1(extracted);
+        console.log("✅ Extracted data:", extracted);
+      });
 
       // socketRef.current.on("disconnect", () => {
       //   console.log("❌ Disconnected, will try to reconnect…");
@@ -69,12 +82,12 @@ export default function ProjectsPage() {
     }
   };
 
-  const sendCodeToAnalyze = (langId: number, etype: string) => {
+  const sendCodeToAnalyze = (langId: number, eetype: string) => {
     if (socketRef.current?.connected) {
       socketRef.current.emit("suggestErr", {
         code: code,
         langId: langId,
-        etype: etype,
+        etype: eetype,
       });
     }
   };
@@ -91,6 +104,7 @@ export default function ProjectsPage() {
           setOutput={setOutput}
           sendCodeToRun={sendCodeToRun}
           sendCodeToAnalyze={sendCodeToAnalyze}
+          data={data1}
         />
       </Suspense>
       {/* <CreateModal /> */}
