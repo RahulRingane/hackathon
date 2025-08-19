@@ -1,8 +1,7 @@
 import { AnimatedTabs } from "./_components/animated-tab";
 import { Issues } from "./_components/issues";
-import { Logs } from "./_components/logs";
 import { Suspense } from "react";
-import AllLogs from "./_components/all-logs";
+import { ThoughtProcessAnalysis } from "./_components/Graph";
 
 const SettingsPage = () => {
   const tabs = [
@@ -20,7 +19,7 @@ const SettingsPage = () => {
         </div>
         <AnimatedTabs tabs={tabs} />
         <Suspense fallback={<div>Loading logs...</div>}>
-          <AllLogs />
+          <ThoughtProcessAnalysis />
         </Suspense>
         <Issues />
       </div>
